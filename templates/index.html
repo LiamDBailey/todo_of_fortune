@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Todo of Fortune</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div id="app">
+    <h1>🎡 Todo of Fortune</h1>
+
+    <!-- Energy input screen -->
+    <div id="energy-screen" class="screen active">
+      <p class="subtitle">How much energy do you have today?</p>
+      <div class="energy-input-row">
+        <input type="number" id="energy-input" min="1" value="3" />
+        <button id="spin-btn" class="btn-primary">Spin!</button>
+      </div>
+      <p class="hint">Tasks at or below your energy level will enter the wheel.</p>
+    </div>
+
+    <!-- Wheel screen -->
+    <div id="wheel-screen" class="screen">
+      <canvas id="wheel-canvas" width="480" height="480"></canvas>
+      <div id="wheel-pointer">▼</div>
+      <p id="spinning-label" class="subtitle">Spinning…</p>
+    </div>
+
+    <!-- Result screen -->
+    <div id="result-screen" class="screen">
+      <div id="result-card">
+        <div id="result-category"></div>
+        <h2 id="result-name"></h2>
+        <div id="result-meta">
+          <span id="result-effort"></span>
+          <span id="result-due"></span>
+        </div>
+        <div class="result-buttons">
+          <button id="complete-btn" class="btn-primary">✓ Mark Complete</button>
+          <button id="respin-btn" class="btn-secondary">↺ Spin Again</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- No tasks screen -->
+    <div id="notasks-screen" class="screen">
+      <div class="no-tasks-box">
+        <p>🎉 No tasks match that energy level!</p>
+        <button id="retry-btn" class="btn-secondary">Try a different level</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/wheel.js"></script>
+</body>
+</html>
