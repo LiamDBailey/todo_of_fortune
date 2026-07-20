@@ -105,13 +105,12 @@ function drawWheel(tasks, rotation) {
   const cx = canvas.width / 2;
   const cy = canvas.height / 2;
   const r = cx - 10;
-  const total = tasks.reduce((s, t) => s + t.weight, 0);
+  const slice = (2 * Math.PI) / tasks.length; // equal segments regardless of probability
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   let startAngle = rotation;
   tasks.forEach((task, i) => {
-    const slice = (task.weight / total) * 2 * Math.PI;
     const endAngle = startAngle + slice;
 
     // Sector
@@ -166,10 +165,9 @@ function drawWheel(tasks, rotation) {
 // ── Compute landing rotation ──────────────────────────────────────────────────
 // Pointer is at TOP (−π/2). Target: selected sector centre lands at −π/2.
 function computeTargetRotation(tasks, selectedName, currentRotation, minSpinRevs = 5) {
-  const total = tasks.reduce((s, t) => s + t.weight, 0);
+  const slice = (2 * Math.PI) / tasks.length; // must match drawWheel equal-slice logic
   let sectorStart = 0;
   for (const task of tasks) {
-    const slice = (task.weight / total) * 2 * Math.PI;
     if (task.name === selectedName) {
       const sectorMid = sectorStart + slice / 2;
       const target = -Math.PI / 2 - sectorMid;

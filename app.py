@@ -34,18 +34,46 @@ def parse_rate(rate_str: str) -> timedelta:
     return timedelta(days=n)
 
 
-def compute_weight(due_date_str: str, weight_effect: float = 1.0) -> float:
-    if not due_date_str or weight_effect == 0:
+def compute_weight(task: dict, weight_effect: float = 1.0) -> float:
+    today = date.today()
+    due_str = task.get("due_date", "")
+    done_str = task.get("last_done", "")
+
+    if done_str:
+        last_done = parse_date(done_str)
+        elapsed = (today - last_done).days
+
+        if not due_str:
+            # Recurring with no due date: 0 if done today, else 1.0
+            return 0.0 if elapsed == 0 else 1.0
+
+        due = parse_date(due_str)
+        period = max(1, (due - last_done).days)
+        progress = elapsed / period  # 0 = just done, 1.0 = at due date
+
+        if progress <= 0:
+            return 0.0  # just completed — exclude from selection
+
+        base = min(1.0, progress)
+        days_remaining = (due - today).days
+        if days_remaining < 0:
+            urgency = 3.0
+        elif days_remaining < 30:
+            urgency = (30 - days_remaining) / 10.0
+        else:
+            urgency = 0.0
+        return base + urgency * weight_effect
+
+    # Never done before (non-recurring, or recurring never attempted)
+    if not due_str or weight_effect == 0:
         return 1.0
-    due = parse_date(due_date_str)
-    days_remaining = (due - date.today()).days
+    due = parse_date(due_str)
+    days_remaining = (due - today).days
     if days_remaining < 0:
-        bonus = 3.0
-    elif days_remaining >= 30:
-        bonus = 0.0
-    else:
-        bonus = (30 - days_remaining) / 10.0
-    return 1.0 + bonus * weight_effect
+        return 1.0 + 3.0 * weight_effect
+    if days_remaining >= 30:
+        return 1.0
+    return 1.0 + (30 - days_remaining) / 10.0 * weight_effect
 
 
 def load_todos() -> list[dict]:
@@ -97,16 +125,20 @@ def spin():
     weight_effect = float(data.get("weight_effect", 1.0))
 
     todos = load_todos()
-    candidates = [t for t in todos if int(t["effort"]) <= energy]
+    by_energy = [t for t in todos if int(t["effort"]) <= energy]
+
+    # Compute weights; tasks with weight=0 (just done) are excluded
+    weighted = [(t, compute_weight(t, weight_effect)) for t in by_energy]
+    candidates = [(t, w) for t, w in weighted if w > 0]
 
     if not candidates:
         return jsonify({"error": "no_tasks"}), 200
 
-    weights = [compute_weight(t["due_date"], weight_effect) for t in candidates]
-    total = sum(weights)
-    normalised = [w / total for w in weights]
+    tasks_list, weight_list = zip(*candidates)
+    total = sum(weight_list)
+    normalised = [w / total for w in weight_list]
 
-    selected = random.choices(candidates, weights=weights, k=1)[0]
+    selected = random.choices(tasks_list, weights=weight_list, k=1)[0]
 
     tasks_out = [
         {
@@ -116,7 +148,7 @@ def spin():
             "weight": normalised[i],
             "due_date": t["due_date"],
         }
-        for i, t in enumerate(candidates)
+        for i, t in enumerate(tasks_list)
     ]
 
     return jsonify({"selected": selected["name"], "tasks": tasks_out})
