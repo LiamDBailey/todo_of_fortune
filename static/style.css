@@ -323,3 +323,22 @@ input[type="range"] {
   color: var(--text-dim);
   margin-top: 0.3rem;
 }
+
+/* ── Weight graph (inside settings modal) ─────────────── */
+.graph-section {
+  margin-top: 1rem;
+}
+.graph-title {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin-bottom: 0.5rem;
+  text-align: center;
+  letter-spacing: 0.3px;
+}
+#weight-graph {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid var(--accent2);
+}

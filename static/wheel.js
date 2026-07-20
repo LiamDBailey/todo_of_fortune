@@ -1,9 +1,12 @@
-// ── Colour palette ────────────────────────────────────────────────────────────
-const COLORS = [
-  "#e94560", "#0f3460", "#533483", "#e8871e",
-  "#1a936f", "#3a7ca5", "#c1666b", "#48a999",
-  "#f4a261", "#264653",
-];
+// ── Category → colour (validated dark palette, all-pairs CVD-safe for ≥3 cats)
+// Slots from reference palette dark mode: blue, green, magenta, amber, orange
+const CATEGORY_COLORS = {
+  household: "#3987e5",
+  science:   "#008300",
+  hobbies:   "#d55181",
+  admin:     "#c98500",
+};
+const FALLBACK_COLOR = "#d95926"; // orange, slot 6
 
 // ── Canvas ────────────────────────────────────────────────────────────────────
 const canvas = document.getElementById("wheel-canvas");
@@ -45,6 +48,7 @@ function openSettings() {
   weightSlider.value = s.weightEffect;
   weightVal.textContent = s.weightEffect.toFixed(2);
   settingsModal.classList.remove("hidden");
+  drawWeightGraph(s.weightEffect);
 }
 
 durationSlider.addEventListener("input", () => {
@@ -56,6 +60,7 @@ weightSlider.addEventListener("input", () => {
   const v = parseFloat(weightSlider.value).toFixed(2);
   weightVal.textContent = v;
   saveSettings({ weightEffect: parseFloat(v) });
+  drawWeightGraph(parseFloat(v));
 });
 
 document.getElementById("settings-btn").addEventListener("click", openSettings);
@@ -65,6 +70,108 @@ document.getElementById("settings-close").addEventListener("click", () => {
 settingsModal.addEventListener("click", e => {
   if (e.target === settingsModal) settingsModal.classList.add("hidden");
 });
+
+// ── Weight graph ──────────────────────────────────────────────────────────────
+const weightGraphCanvas = document.getElementById("weight-graph");
+
+// Mirror of backend compute_weight for a "fully available" task (base=1.0)
+function weightAt(daysRemaining, weightEffect) {
+  if (daysRemaining < 0) return 1.0 + 3.0 * weightEffect;
+  if (daysRemaining >= 30) return 1.0;
+  return 1.0 + (30 - daysRemaining) / 10 * weightEffect;
+}
+
+function drawWeightGraph(weightEffect) {
+  const gc = weightGraphCanvas;
+  const gx = gc.getContext("2d");
+  const W = gc.width, H = gc.height;
+
+  const PAD = { top: 14, right: 10, bottom: 30, left: 36 };
+  const pw = W - PAD.left - PAD.right;
+  const ph = H - PAD.top - PAD.bottom;
+
+  const xMin = -8, xMax = 34;
+  const yMin = 0, yMax = 4.5;
+  const toX = d => PAD.left + ((d - xMin) / (xMax - xMin)) * pw;
+  const toY = v => PAD.top + ph - ((v - yMin) / (yMax - yMin)) * ph;
+
+  gx.clearRect(0, 0, W, H);
+  gx.fillStyle = "#0f0f1a";
+  gx.fillRect(0, 0, W, H);
+
+  // Horizontal gridlines
+  gx.strokeStyle = "rgba(255,255,255,0.07)";
+  gx.lineWidth = 1;
+  [1, 2, 3, 4].forEach(y => {
+    const py = toY(y);
+    gx.beginPath(); gx.moveTo(PAD.left, py); gx.lineTo(PAD.left + pw, py); gx.stroke();
+  });
+
+  // Due-date vertical marker
+  gx.strokeStyle = "rgba(233,69,96,0.45)";
+  gx.lineWidth = 1;
+  gx.setLineDash([3, 3]);
+  const dueX = toX(0);
+  gx.beginPath(); gx.moveTo(dueX, PAD.top); gx.lineTo(dueX, PAD.top + ph); gx.stroke();
+  gx.setLineDash([]);
+
+  // Baseline at y=1 (equal probability)
+  gx.strokeStyle = "rgba(255,255,255,0.2)";
+  gx.lineWidth = 1;
+  gx.setLineDash([4, 4]);
+  const baseY = toY(1);
+  gx.beginPath(); gx.moveTo(PAD.left, baseY); gx.lineTo(PAD.left + pw, baseY); gx.stroke();
+  gx.setLineDash([]);
+
+  // Build curve at 0.25-day resolution
+  const pts = [];
+  for (let d = xMin; d <= xMax; d += 0.25) {
+    pts.push([toX(d), toY(weightAt(d, weightEffect))]);
+  }
+
+  // Filled area between curve and baseline
+  gx.beginPath();
+  gx.moveTo(pts[0][0], baseY);
+  pts.forEach(([px, py]) => gx.lineTo(px, py));
+  gx.lineTo(pts[pts.length - 1][0], baseY);
+  gx.closePath();
+  gx.fillStyle = "rgba(57,135,229,0.15)";
+  gx.fill();
+
+  // Curve line
+  gx.beginPath();
+  pts.forEach(([px, py], i) => i === 0 ? gx.moveTo(px, py) : gx.lineTo(px, py));
+  gx.strokeStyle = "#3987e5";
+  gx.lineWidth = 2;
+  gx.lineJoin = "round";
+  gx.stroke();
+
+  // Axes
+  gx.strokeStyle = "rgba(255,255,255,0.18)";
+  gx.lineWidth = 1;
+  gx.beginPath();
+  gx.moveTo(PAD.left, PAD.top); gx.lineTo(PAD.left, PAD.top + ph);
+  gx.lineTo(PAD.left + pw, PAD.top + ph);
+  gx.stroke();
+
+  // Y axis labels
+  gx.fillStyle = "rgba(255,255,255,0.4)";
+  gx.font = "10px 'Segoe UI', system-ui, sans-serif";
+  gx.textAlign = "right";
+  gx.textBaseline = "middle";
+  [1, 2, 3, 4].forEach(y => gx.fillText(`×${y}`, PAD.left - 4, toY(y)));
+
+  // X axis labels & ticks
+  gx.textBaseline = "top";
+  [[-7, "-7d"], [0, "due"], [7, "+7d"], [14, "+14d"], [21, "+21d"], [30, "+30d"]].forEach(([d, lbl]) => {
+    const px = toX(d);
+    gx.strokeStyle = "rgba(255,255,255,0.18)";
+    gx.beginPath(); gx.moveTo(px, PAD.top + ph); gx.lineTo(px, PAD.top + ph + 3); gx.stroke();
+    gx.fillStyle = d === 0 ? "rgba(233,69,96,0.8)" : "rgba(255,255,255,0.4)";
+    gx.textAlign = "center";
+    gx.fillText(lbl, px, PAD.top + ph + 5);
+  });
+}
 
 // ── Audio (Web Audio API — roulette ticks) ────────────────────────────────────
 let audioCtx = null;
@@ -118,7 +225,7 @@ function drawWheel(tasks, rotation) {
     ctx.moveTo(cx, cy);
     ctx.arc(cx, cy, r, startAngle, endAngle);
     ctx.closePath();
-    ctx.fillStyle = COLORS[i % COLORS.length];
+    ctx.fillStyle = CATEGORY_COLORS[task.category] || FALLBACK_COLOR;
     ctx.fill();
     ctx.strokeStyle = "#0f0f1a";
     ctx.lineWidth = 2;
