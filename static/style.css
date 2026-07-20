@@ -262,6 +262,23 @@ input[type="number"]:focus { border-color: var(--accent); }
   color: var(--text-dim);
   white-space: nowrap;
 }
+.history-status {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.history-status--done {
+  background: rgba(0, 131, 0, 0.2);
+  color: #1baf7a;
+}
+.history-status--skipped {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-dim);
+}
 
 /* ── Settings modal ───────────────────────────────────── */
 .modal-overlay {

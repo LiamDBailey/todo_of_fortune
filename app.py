@@ -9,7 +9,7 @@ app = Flask(__name__)
 TODOS_PATH = Path(__file__).parent / "todos.csv"
 HISTORY_PATH = Path(__file__).parent / "history.csv"
 TODOS_FIELDS = ["name", "category", "reoccuring", "reoccuring_rate", "last_done", "due_date", "effort"]
-HISTORY_FIELDS = ["name", "category", "completion_date"]
+HISTORY_FIELDS = ["name", "category", "completion_date", "status", "effort"]
 
 
 def parse_date(s: str) -> date | None:
@@ -100,12 +100,14 @@ def load_history() -> list[dict]:
         ]
 
 
-def append_history(name: str, category: str) -> None:
+def append_history(name: str, category: str, effort: str, status: str = "done") -> None:
     history = load_history()
     history.append({
         "name": name,
         "category": category,
         "completion_date": format_date(date.today()),
+        "status": status,
+        "effort": effort,
     })
     with open(HISTORY_PATH, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=HISTORY_FIELDS)
@@ -171,12 +173,23 @@ def complete():
                     t["due_date"] = format_date(today + parse_rate(t["reoccuring_rate"]))
                 updated.append(t)
             else:
-                append_history(t["name"], t["category"])
+                append_history(t["name"], t["category"], t["effort"])
                 # task is dropped by not appending to updated
         else:
             updated.append(t)
 
     save_todos(updated)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/skip", methods=["POST"])
+def skip():
+    data = request.get_json()
+    name = data.get("name")
+    todos = load_todos()
+    task = next((t for t in todos if t["name"] == name), None)
+    if task:
+        append_history(task["name"], task["category"], task["effort"], status="skipped")
     return jsonify({"ok": True})
 
 

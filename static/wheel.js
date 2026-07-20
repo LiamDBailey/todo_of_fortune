@@ -397,6 +397,18 @@ document.getElementById("complete-btn").addEventListener("click", async () => {
   selectedTask = null;
 });
 
+// ── Not done yet ──────────────────────────────────────────────────────────────
+document.getElementById("notdone-btn").addEventListener("click", async () => {
+  if (!selectedTask) return;
+  await fetch("/api/skip", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: selectedTask.name }),
+  });
+  showScreen("energy-screen");
+  selectedTask = null;
+});
+
 // ── Spin again ────────────────────────────────────────────────────────────────
 document.getElementById("respin-btn").addEventListener("click", () => {
   showScreen("energy-screen");
@@ -432,11 +444,13 @@ document.getElementById("history-btn").addEventListener("click", async () => {
   empty.style.display = "none";
 
   entries.forEach(e => {
+    const status = e.status || "done";
     const item = document.createElement("div");
     item.className = "history-item";
     item.innerHTML = `
       <span class="history-name">${e.name}</span>
       <span class="history-cat">${e.category}</span>
+      <span class="history-status history-status--${status}">${status === "skipped" ? "not done" : "done"}</span>
       <span class="history-date">${e.completion_date || ""}</span>
     `;
     list.appendChild(item);
