@@ -17,23 +17,49 @@ body {
   font-family: 'Segoe UI', system-ui, sans-serif;
   min-height: 100vh;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
 }
 
 #app {
   width: 100%;
   max-width: 560px;
-  padding: 2rem 1.5rem;
+  padding: 1.5rem 1.5rem 2rem;
   text-align: center;
 }
 
-h1 {
-  font-size: 2.2rem;
-  font-weight: 800;
+/* ── Top nav ──────────────────────────────────────────── */
+#top-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 2rem;
-  letter-spacing: -0.5px;
 }
+
+h1 {
+  font-size: 1.9rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  flex: 1;
+  text-align: center;
+}
+
+.icon-btn {
+  background: var(--surface);
+  border: 2px solid var(--accent2);
+  color: var(--text-dim);
+  border-radius: 12px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+  flex-shrink: 0;
+  font-size: 1rem;
+}
+.icon-btn:hover { border-color: var(--accent); color: var(--text); }
 
 .subtitle {
   font-size: 1.1rem;
@@ -96,24 +122,32 @@ input[type="number"]:focus { border-color: var(--accent); }
   border: 2px solid var(--accent2);
 }
 .btn-secondary:hover { border-color: var(--accent); }
+.btn-sm { padding: 0.4rem 1rem; font-size: 0.9rem; }
 
 /* ── Wheel ────────────────────────────────────────────── */
-#wheel-screen { position: relative; display: none; }
-#wheel-screen.active { display: flex; flex-direction: column; align-items: center; gap: 0; }
+#wheel-screen { position: relative; }
+#wheel-screen.active {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Pointer sits ABOVE the canvas, pointing down at the top of the wheel */
+#wheel-pointer {
+  font-size: 2.5rem;
+  color: var(--accent);
+  margin-bottom: -1.4rem; /* overlap so the tip sits just above the canvas rim */
+  position: relative;
+  z-index: 10;
+  line-height: 1;
+  filter: drop-shadow(0 3px 8px rgba(233,69,96,0.8));
+}
 
 #wheel-canvas {
   border-radius: 50%;
   box-shadow: 0 0 60px rgba(233, 69, 96, 0.35);
   max-width: 100%;
   height: auto;
-}
-
-#wheel-pointer {
-  font-size: 2.5rem;
-  color: var(--accent);
-  margin-top: -0.5rem;
-  filter: drop-shadow(0 2px 6px rgba(233,69,96,0.7));
-  line-height: 1;
 }
 
 #spinning-label {
@@ -181,4 +215,111 @@ input[type="number"]:focus { border-color: var(--accent); }
 .no-tasks-box p {
   font-size: 1.2rem;
   margin-bottom: 1.2rem;
+}
+
+/* ── History screen ───────────────────────────────────── */
+#history-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+#history-header h2 {
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--accent2);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 0.6rem;
+  text-align: left;
+}
+.history-name {
+  flex: 1;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.history-cat {
+  background: var(--accent2);
+  color: var(--text-dim);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.history-date {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+/* ── Settings modal ───────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+.modal-overlay.hidden { display: none; }
+
+.modal-box {
+  background: var(--surface);
+  border: 2px solid var(--accent2);
+  border-radius: var(--radius);
+  width: min(420px, 90vw);
+  padding: 1.5rem;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+.modal-header h3 {
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.setting-row {
+  margin-bottom: 1.5rem;
+}
+.setting-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+}
+.setting-value {
+  font-weight: 700;
+  color: var(--accent);
+  font-size: 1rem;
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+  cursor: pointer;
+  height: 6px;
+}
+.slider-hints {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin-top: 0.3rem;
 }
