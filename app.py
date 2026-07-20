@@ -171,6 +171,7 @@ def complete():
                 t["last_done"] = format_date(today)
                 if t["reoccuring_rate"]:
                     t["due_date"] = format_date(today + parse_rate(t["reoccuring_rate"]))
+                append_history(t["name"], t["category"], t["effort"])
                 updated.append(t)
             else:
                 append_history(t["name"], t["category"], t["effort"])
