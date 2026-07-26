@@ -199,5 +199,67 @@ def history():
     return jsonify(list(reversed(load_history())))
 
 
+@app.route("/api/todos", methods=["GET"])
+def get_todos_list():
+    return jsonify(load_todos())
+
+
+@app.route("/api/todos/add", methods=["POST"])
+def add_todo():
+    data = request.get_json()
+    name = (data.get("name") or "").strip()
+    if not name:
+        return jsonify({"error": "name_required"}), 400
+    todos = load_todos()
+    if any(t["name"] == name for t in todos):
+        return jsonify({"error": "duplicate_name"}), 400
+    todos.append({
+        "name": name,
+        "category": (data.get("category") or "").strip(),
+        "reoccuring": "TRUE" if data.get("reoccuring") else "FALSE",
+        "reoccuring_rate": (data.get("reoccuring_rate") or "").strip(),
+        "last_done": "",
+        "due_date": (data.get("due_date") or "").strip(),
+        "effort": str(int(data.get("effort") or 1)),
+    })
+    save_todos(todos)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/todos/update", methods=["POST"])
+def update_todo():
+    data = request.get_json()
+    orig = (data.get("original_name") or "").strip()
+    todos = load_todos()
+    updated = []
+    found = False
+    for t in todos:
+        if t["name"] == orig:
+            found = True
+            updated.append({
+                "name": (data.get("name") or orig).strip(),
+                "category": (data.get("category") or "").strip(),
+                "reoccuring": "TRUE" if data.get("reoccuring") else "FALSE",
+                "reoccuring_rate": (data.get("reoccuring_rate") or "").strip(),
+                "last_done": t["last_done"],
+                "due_date": (data.get("due_date") or "").strip(),
+                "effort": str(int(data.get("effort") or t.get("effort") or 1)),
+            })
+        else:
+            updated.append(t)
+    if not found:
+        return jsonify({"error": "not_found"}), 404
+    save_todos(updated)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/todos/delete", methods=["POST"])
+def delete_todo():
+    data = request.get_json()
+    name = (data.get("name") or "").strip()
+    save_todos([t for t in load_todos() if t["name"] != name])
+    return jsonify({"ok": True})
+
+
 if __name__ == "__main__":
     app.run(debug=True, port=5001)

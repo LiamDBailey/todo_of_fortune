@@ -1,12 +1,25 @@
 // ── Category → colour (validated dark palette, all-pairs CVD-safe for ≥3 cats)
-// Slots from reference palette dark mode: blue, green, magenta, amber, orange
-const CATEGORY_COLORS = {
+const DEFAULT_CATEGORY_COLORS = {
   household: "#3987e5",
   science:   "#008300",
   hobbies:   "#d55181",
   admin:     "#c98500",
+  coding:    "#d95926",
 };
-const FALLBACK_COLOR = "#d95926"; // orange, slot 6
+const DEFAULT_FALLBACK_COLOR = "#d95926";
+
+function getCategoryColors() {
+  const s = loadSettings();
+  return { ...DEFAULT_CATEGORY_COLORS, ...(s.categoryColors || {}) };
+}
+
+function getFallbackColor() {
+  return loadSettings().fallbackColor || DEFAULT_FALLBACK_COLOR;
+}
+
+function getCategoryColor(cat) {
+  return getCategoryColors()[cat] || getFallbackColor();
+}
 
 // ── Canvas ────────────────────────────────────────────────────────────────────
 const canvas = document.getElementById("wheel-canvas");
@@ -49,6 +62,61 @@ function openSettings() {
   weightVal.textContent = s.weightEffect.toFixed(2);
   settingsModal.classList.remove("hidden");
   drawWeightGraph(s.weightEffect);
+  populateCategoryColors();
+}
+
+async function populateCategoryColors() {
+  const container = document.getElementById("category-colors-list");
+  container.innerHTML = '<p class="form-hint">Loading…</p>';
+
+  let todos;
+  try {
+    const res = await fetch("/api/todos");
+    todos = await res.json();
+  } catch {
+    container.innerHTML = '<p class="form-hint">Could not load categories.</p>';
+    return;
+  }
+
+  const cats = [...new Set(todos.map(t => t.category).filter(Boolean))];
+  if (!cats.length) {
+    container.innerHTML = '<p class="form-hint">No categories found.</p>';
+    return;
+  }
+
+  container.innerHTML = "";
+  const colors = getCategoryColors();
+
+  cats.sort().forEach(cat => {
+    const color = colors[cat] || getFallbackColor();
+    const row = document.createElement("div");
+    row.className = "color-row";
+    row.innerHTML = `
+      <input type="color" class="cat-color-input" value="${color}" data-cat="${cat}" title="${cat}">
+      <span class="color-label">${cat}</span>
+      <button class="color-reset-btn" data-cat="${cat}" title="Reset to default">Reset</button>
+    `;
+    container.appendChild(row);
+  });
+
+  container.querySelectorAll(".cat-color-input").forEach(input => {
+    input.addEventListener("input", () => {
+      const existing = loadSettings().categoryColors || {};
+      existing[input.dataset.cat] = input.value;
+      saveSettings({ categoryColors: existing });
+    });
+  });
+
+  container.querySelectorAll(".color-reset-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const cat = btn.dataset.cat;
+      const existing = loadSettings().categoryColors || {};
+      delete existing[cat];
+      saveSettings({ categoryColors: existing });
+      const input = container.querySelector(`.cat-color-input[data-cat="${cat}"]`);
+      if (input) input.value = DEFAULT_CATEGORY_COLORS[cat] || DEFAULT_FALLBACK_COLOR;
+    });
+  });
 }
 
 durationSlider.addEventListener("input", () => {
@@ -225,7 +293,7 @@ function drawWheel(tasks, rotation) {
     ctx.moveTo(cx, cy);
     ctx.arc(cx, cy, r, startAngle, endAngle);
     ctx.closePath();
-    ctx.fillStyle = CATEGORY_COLORS[task.category] || FALLBACK_COLOR;
+    ctx.fillStyle = getCategoryColor(task.category);
     ctx.fill();
     ctx.strokeStyle = "#0f0f1a";
     ctx.lineWidth = 2;
@@ -460,3 +528,208 @@ document.getElementById("history-btn").addEventListener("click", async () => {
 document.getElementById("history-back").addEventListener("click", () => {
   showScreen("energy-screen");
 });
+
+// ── Date helpers ──────────────────────────────────────────────────────────────
+// Backend uses D/M/YYYY; <input type="date"> uses YYYY-MM-DD
+
+function toInputDate(s) {
+  if (!s) return "";
+  const parts = s.split("/");
+  if (parts.length !== 3) return "";
+  const [d, m, y] = parts;
+  return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+}
+
+function fromInputDate(s) {
+  if (!s) return "";
+  const [y, m, d] = s.split("-");
+  return `${parseInt(d)}/${parseInt(m)}/${y}`;
+}
+
+// ── Todos screen ──────────────────────────────────────────────────────────────
+async function loadTodosScreen() {
+  const list = document.getElementById("todos-list");
+  const empty = document.getElementById("todos-empty");
+  list.innerHTML = "";
+  empty.style.display = "none";
+
+  let todos;
+  try {
+    const res = await fetch("/api/todos");
+    todos = await res.json();
+  } catch {
+    empty.style.display = "block";
+    empty.textContent = "Could not load todos.";
+    return;
+  }
+
+  if (!todos.length) {
+    empty.style.display = "block";
+    return;
+  }
+
+  todos.forEach(t => {
+    const item = document.createElement("div");
+    item.className = "todo-item";
+
+    const recurring = t.reoccuring === "TRUE" || t.reoccuring === true;
+    const chips = [
+      `<span class="todo-chip todo-chip--cat">${t.category || "—"}</span>`,
+      `<span class="todo-chip todo-chip--effort">⚡ ${t.effort}</span>`,
+      t.due_date ? `<span class="todo-chip todo-chip--due">📅 ${t.due_date}</span>` : "",
+      recurring ? `<span class="todo-chip todo-chip--recurring">↻ ${t.reoccuring_rate || "recurring"}</span>` : "",
+    ].filter(Boolean).join("");
+
+    item.innerHTML = `
+      <div class="todo-item-header">
+        <span class="todo-name">${t.name}</span>
+        <div class="todo-actions">
+          <button class="icon-btn-sm edit-btn" title="Edit">✎</button>
+          <button class="icon-btn-sm delete-btn" title="Delete">✕</button>
+        </div>
+      </div>
+      <div class="todo-meta">${chips}</div>
+    `;
+
+    item.querySelector(".edit-btn").addEventListener("click", () => openTodoModal(t));
+    item.querySelector(".delete-btn").addEventListener("click", () => deleteTodo(t.name));
+
+    list.appendChild(item);
+  });
+}
+
+document.getElementById("todos-btn").addEventListener("click", () => {
+  showScreen("todos-screen");
+  loadTodosScreen();
+});
+
+document.getElementById("todos-back").addEventListener("click", () => {
+  showScreen("energy-screen");
+});
+
+document.getElementById("todos-add-btn").addEventListener("click", () => openTodoModal());
+
+async function deleteTodo(name) {
+  if (!confirm(`Delete "${name}"?`)) return;
+  await fetch("/api/todos/delete", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+  loadTodosScreen();
+}
+
+// ── Add / Edit Todo modal ─────────────────────────────────────────────────────
+const todoModal = document.getElementById("todo-modal");
+const todoRateRow = document.getElementById("todo-rate-row");
+const todoRecurring = document.getElementById("todo-recurring");
+const todoRateInput = document.getElementById("todo-rate");
+const todoError = document.getElementById("todo-error");
+let _editingName = null;
+
+function openTodoModal(todo = null) {
+  _editingName = todo ? todo.name : null;
+  document.getElementById("todo-modal-title").textContent = todo ? "Edit Todo" : "Add Todo";
+  document.getElementById("todo-name").value = todo ? todo.name : "";
+  document.getElementById("todo-category").value = todo ? (todo.category || "") : "";
+  document.getElementById("todo-effort").value = todo ? (todo.effort || 3) : 3;
+  document.getElementById("todo-due").value = todo ? toInputDate(todo.due_date) : "";
+
+  const recurring = todo ? (todo.reoccuring === "TRUE" || todo.reoccuring === true) : false;
+  todoRecurring.checked = recurring;
+  todoRateInput.value = todo ? (todo.reoccuring_rate || "") : "";
+  todoRateInput.disabled = !recurring;
+  todoRateRow.style.opacity = recurring ? "1" : "0.4";
+
+  todoError.style.display = "none";
+
+  // Populate category suggestions datalist
+  fetch("/api/todos").then(r => r.json()).then(todos => {
+    const cats = [...new Set(todos.map(t => t.category).filter(Boolean))];
+    const dl = document.getElementById("cat-suggestions");
+    dl.innerHTML = cats.map(c => `<option value="${c}">`).join("");
+  }).catch(() => {});
+
+  todoModal.classList.remove("hidden");
+  setTimeout(() => document.getElementById("todo-name").focus(), 50);
+}
+
+function closeTodoModal() {
+  todoModal.classList.add("hidden");
+  _editingName = null;
+}
+
+todoRecurring.addEventListener("change", () => {
+  const on = todoRecurring.checked;
+  todoRateInput.disabled = !on;
+  todoRateRow.style.opacity = on ? "1" : "0.4";
+  if (!on) todoRateInput.value = "";
+});
+
+document.getElementById("todo-save-btn").addEventListener("click", saveTodo);
+document.getElementById("todo-cancel-btn").addEventListener("click", closeTodoModal);
+document.getElementById("todo-modal-close").addEventListener("click", closeTodoModal);
+document.getElementById("add-todo-btn").addEventListener("click", () => openTodoModal());
+
+todoModal.addEventListener("click", e => {
+  if (e.target === todoModal) closeTodoModal();
+});
+
+async function saveTodo() {
+  const name = document.getElementById("todo-name").value.trim();
+  if (!name) {
+    showTodoError("Name is required.");
+    return;
+  }
+  const effort = parseInt(document.getElementById("todo-effort").value, 10);
+  if (!effort || effort < 1 || effort > 10) {
+    showTodoError("Effort must be between 1 and 10.");
+    return;
+  }
+
+  const payload = {
+    name,
+    category: document.getElementById("todo-category").value.trim(),
+    effort,
+    due_date: fromInputDate(document.getElementById("todo-due").value),
+    reoccuring: todoRecurring.checked,
+    reoccuring_rate: todoRecurring.checked ? todoRateInput.value.trim() : "",
+  };
+
+  const url = _editingName ? "/api/todos/update" : "/api/todos/add";
+  if (_editingName) payload.original_name = _editingName;
+
+  let res, data;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    data = await res.json();
+  } catch {
+    showTodoError("Network error. Try again.");
+    return;
+  }
+
+  if (!res.ok || data.error) {
+    const msg = data.error === "duplicate_name"
+      ? "A todo with that name already exists."
+      : data.error === "name_required"
+      ? "Name is required."
+      : "Something went wrong.";
+    showTodoError(msg);
+    return;
+  }
+
+  closeTodoModal();
+  // Refresh todos list if that screen is active, otherwise just close
+  if (document.getElementById("todos-screen").classList.contains("active")) {
+    loadTodosScreen();
+  }
+}
+
+function showTodoError(msg) {
+  todoError.textContent = msg;
+  todoError.style.display = "block";
+}

@@ -11,18 +11,33 @@
 
     <!-- Top nav -->
     <div id="top-nav">
-      <button id="history-btn" class="icon-btn" title="History">
-        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-        </svg>
-      </button>
+      <div class="nav-left">
+        <button id="history-btn" class="icon-btn" title="History">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </button>
+        <button id="todos-btn" class="icon-btn" title="View Todos">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+            <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+          </svg>
+        </button>
+      </div>
       <h1>🎡 Todo of Fortune</h1>
-      <button id="settings-btn" class="icon-btn" title="Settings">
-        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="3"/>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-        </svg>
-      </button>
+      <div class="nav-right">
+        <button id="add-todo-btn" class="icon-btn icon-btn--accent" title="Add Todo">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+        </button>
+        <button id="settings-btn" class="icon-btn" title="Settings">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </button>
+      </div>
     </div>
 
     <!-- Energy input screen -->
@@ -77,6 +92,17 @@
       <p id="history-empty" class="hint" style="display:none">No completed tasks yet.</p>
     </div>
 
+    <!-- Todos screen -->
+    <div id="todos-screen" class="screen">
+      <div id="todos-header">
+        <button id="todos-back" class="btn-secondary btn-sm">← Back</button>
+        <h2>My Todos</h2>
+        <button id="todos-add-btn" class="btn-primary btn-sm">+ New</button>
+      </div>
+      <div id="todos-list"></div>
+      <p id="todos-empty" class="hint" style="display:none">No todos yet. Add one!</p>
+    </div>
+
   </div>
 
   <!-- Settings modal -->
@@ -106,6 +132,56 @@
         <div class="graph-section">
           <p class="graph-title">Selection weight vs. days to due date</p>
           <canvas id="weight-graph" width="360" height="130"></canvas>
+        </div>
+        <div class="setting-row setting-row--colors">
+          <div class="setting-label"><span>Category colours</span></div>
+          <div id="category-colors-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add / Edit Todo modal -->
+  <div id="todo-modal" class="modal-overlay hidden">
+    <div class="modal-box modal-box--form">
+      <div class="modal-header">
+        <h3 id="todo-modal-title">Add Todo</h3>
+        <button id="todo-modal-close" class="icon-btn">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <label for="todo-name">Name</label>
+          <input type="text" id="todo-name" class="form-input" placeholder="Task name" autocomplete="off" />
+        </div>
+        <div class="form-row">
+          <label for="todo-category">Category</label>
+          <input type="text" id="todo-category" class="form-input" list="cat-suggestions" placeholder="e.g. household, hobbies" autocomplete="off" />
+          <datalist id="cat-suggestions"></datalist>
+        </div>
+        <div class="form-row">
+          <label for="todo-effort">Effort (1–10)</label>
+          <input type="number" id="todo-effort" class="form-input" min="1" max="10" value="3" />
+        </div>
+        <div class="form-row">
+          <label for="todo-due">Due date <span class="label-optional">(optional)</span></label>
+          <input type="date" id="todo-due" class="form-input" />
+        </div>
+        <div class="form-row form-row--inline">
+          <label for="todo-recurring">Recurring</label>
+          <label class="toggle">
+            <input type="checkbox" id="todo-recurring" />
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+        <div class="form-row" id="todo-rate-row">
+          <label for="todo-rate">Frequency</label>
+          <input type="text" id="todo-rate" class="form-input" placeholder="e.g. 1 week, 2 weeks, 1 month" />
+          <p class="form-hint">Natural language: "1 week", "2 weeks", "1 month", "3 months"</p>
+        </div>
+        <p id="todo-error" class="form-error" style="display:none"></p>
+        <div class="form-buttons">
+          <button id="todo-save-btn" class="btn-primary">Save</button>
+          <button id="todo-cancel-btn" class="btn-secondary">Cancel</button>
         </div>
       </div>
     </div>
