@@ -437,6 +437,12 @@ input[type="range"] {
   text-align: left;
 }
 
+.todos-header-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
 .todo-item {
   background: var(--surface);
   border: 1px solid var(--accent2);

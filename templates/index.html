@@ -97,10 +97,14 @@
       <div id="todos-header">
         <button id="todos-back" class="btn-secondary btn-sm">← Back</button>
         <h2>My Todos</h2>
-        <button id="todos-add-btn" class="btn-primary btn-sm">+ New</button>
+        <div class="todos-header-actions">
+          <button id="todos-import-btn" class="btn-secondary btn-sm">↑ Import CSV</button>
+          <button id="todos-add-btn" class="btn-primary btn-sm">+ New</button>
+        </div>
       </div>
+      <input type="file" id="todos-import-input" accept=".csv" style="display:none">
       <div id="todos-list"></div>
-      <p id="todos-empty" class="hint" style="display:none">No todos yet. Add one!</p>
+      <p id="todos-empty" class="hint" style="display:none">No todos yet. Add one or import a CSV.</p>
     </div>
 
   </div>

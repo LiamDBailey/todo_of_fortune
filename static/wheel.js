@@ -546,6 +546,76 @@ function fromInputDate(s) {
   return `${parseInt(d)}/${parseInt(m)}/${y}`;
 }
 
+// ── CSV import ────────────────────────────────────────────────────────────────
+function parseCSVRow(line) {
+  const values = [];
+  let inQuote = false, val = "";
+  for (const ch of line) {
+    if (ch === '"')                  { inQuote = !inQuote; }
+    else if (ch === "," && !inQuote) { values.push(val.trim()); val = ""; }
+    else                             { val += ch; }
+  }
+  values.push(val.trim());
+  return values;
+}
+
+function parseCSV(text) {
+  const lines = text
+    .replace(/^﻿/, "")
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .split("\n")
+    .filter(l => l.trim());
+  if (lines.length < 2) return [];
+  const headers = parseCSVRow(lines[0]).map(h => h.toLowerCase().trim());
+  return lines.slice(1).map(line => {
+    const vals = parseCSVRow(line);
+    const obj  = {};
+    headers.forEach((h, i) => { obj[h] = vals[i] || ""; });
+    return obj;
+  });
+}
+
+async function handleImportFile(file) {
+  const text = await file.text();
+  const rows = parseCSV(text);
+  const imported = rows
+    .map(r => ({
+      name:            (r.name            || "").trim(),
+      category:        (r.category        || "").trim(),
+      reoccuring:      (r.reoccuring      || "").trim().toUpperCase() === "TRUE",
+      reoccuring_rate: (r.reoccuring_rate || "").trim(),
+      last_done:       (r.last_done       || "").trim(),
+      due_date:        (r.due_date        || "").trim(),
+      effort:          parseInt(r.effort) || 1,
+    }))
+    .filter(r => r.name);
+
+  if (!imported.length) { alert("No valid todos found in the file."); return; }
+
+  let existing = [];
+  try { existing = await fetch("/api/todos").then(r => r.json()); } catch {}
+
+  const msg = existing.length
+    ? `Replace ${existing.length} existing todo${existing.length !== 1 ? "s" : ""} with ${imported.length} imported?`
+    : `Import ${imported.length} todo${imported.length !== 1 ? "s" : ""}?`;
+  if (!confirm(msg)) return;
+
+  for (const t of existing) {
+    await fetch("/api/todos/delete", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: t.name }),
+    });
+  }
+  for (const t of imported) {
+    await fetch("/api/todos/add", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(t),
+    });
+  }
+  loadTodosScreen();
+}
+
 // ── Todos screen ──────────────────────────────────────────────────────────────
 async function loadTodosScreen() {
   const list = document.getElementById("todos-list");
@@ -608,6 +678,13 @@ document.getElementById("todos-back").addEventListener("click", () => {
 });
 
 document.getElementById("todos-add-btn").addEventListener("click", () => openTodoModal());
+
+const todosImportInput = document.getElementById("todos-import-input");
+document.getElementById("todos-import-btn").addEventListener("click", () => todosImportInput.click());
+todosImportInput.addEventListener("change", e => {
+  const file = e.target.files[0];
+  if (file) { handleImportFile(file); e.target.value = ""; }
+});
 
 async function deleteTodo(name) {
   if (!confirm(`Delete "${name}"?`)) return;

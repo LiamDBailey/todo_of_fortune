@@ -12,34 +12,6 @@ function appendHistory(name, category, effort, status = "done") {
   localStorage.setItem(HISTORY_KEY, JSON.stringify(h));
 }
 
-// ── Seed data (loaded once on first visit) ────────────────────────────────────
-const SEED_TODOS = [
-  { name: "Water plants",          category: "household", reoccuring: "TRUE",  reoccuring_rate: "1 week",   last_done: "25/7/2026", due_date: "1/8/2026",   effort: "1" },
-  { name: "Finish climwin",        category: "science",   reoccuring: "FALSE", reoccuring_rate: "",         last_done: "",          due_date: "",            effort: "5" },
-  { name: "Clean bike",            category: "household", reoccuring: "TRUE",  reoccuring_rate: "2 week",   last_done: "19/7/2026", due_date: "3/8/2026",   effort: "3" },
-  { name: "Create piano schedule", category: "hobbies",   reoccuring: "FALSE", reoccuring_rate: "",         last_done: "",          due_date: "",            effort: "3" },
-  { name: "Baking",                category: "hobbies",   reoccuring: "TRUE",  reoccuring_rate: "1 month",  last_done: "1/7/2026",  due_date: "19/8/2026",  effort: "4" },
-  { name: "Edit photos",           category: "hobbies",   reoccuring: "TRUE",  reoccuring_rate: "1 month",  last_done: "",          due_date: "15/8/2026",  effort: "4" },
-  { name: "Take photos",           category: "hobbies",   reoccuring: "TRUE",  reoccuring_rate: "1 month",  last_done: "1/7/2026",  due_date: "19/8/2026",  effort: "7" },
-  { name: "Aus passport",          category: "admin",     reoccuring: "FALSE", reoccuring_rate: "",         last_done: "",          due_date: "1/9/2026",   effort: "5" },
-  { name: "UK passport",           category: "admin",     reoccuring: "FALSE", reoccuring_rate: "",         last_done: "",          due_date: "7/10/2026",  effort: "5" },
-  { name: "Prepare Aus tax 2026",  category: "admin",     reoccuring: "FALSE", reoccuring_rate: "",         last_done: "",          due_date: "31/10/2026", effort: "4" },
-  { name: "Data viz",              category: "hobbies",   reoccuring: "TRUE",  reoccuring_rate: "1 month",  last_done: "",          due_date: "15/8/2026",  effort: "6" },
-  { name: "Clean bathroom",        category: "household", reoccuring: "TRUE",  reoccuring_rate: "2 week",   last_done: "25/7/2026", due_date: "8/8/2026",   effort: "3" },
-  { name: "Laundry",               category: "household", reoccuring: "TRUE",  reoccuring_rate: "1 week",   last_done: "25/7/2026", due_date: "1/8/2026",   effort: "1" },
-  { name: "Frame pictures",        category: "household", reoccuring: "FALSE", reoccuring_rate: "",         last_done: "",          due_date: "",            effort: "7" },
-  { name: "Clean rangehood",       category: "household", reoccuring: "TRUE",  reoccuring_rate: "3 month",  last_done: "1/6/2026",  due_date: "1/9/2026",   effort: "4" },
-  { name: "German focussed study", category: "hobbies",   reoccuring: "TRUE",  reoccuring_rate: "1 week",   last_done: "",          due_date: "1/8/2026",   effort: "4" },
-  { name: "UK reregister to vote", category: "admin",     reoccuring: "FALSE", reoccuring_rate: "",         last_done: "",          due_date: "",            effort: "4" },
-  { name: "Ecogon",                category: "coding",    reoccuring: "TRUE",  reoccuring_rate: "1 month",  last_done: "",          due_date: "8/8/2026",   effort: "8" },
-  { name: "Choice matters RPG",    category: "coding",    reoccuring: "TRUE",  reoccuring_rate: "1 month",  last_done: "",          due_date: "15/8/2026",  effort: "8" },
-  { name: "AI pipelines",          category: "coding",    reoccuring: "TRUE",  reoccuring_rate: "1 month",  last_done: "",          due_date: "8/8/2026",   effort: "5" },
-  { name: "Birding",               category: "hobbies",   reoccuring: "TRUE",  reoccuring_rate: "1 month",  last_done: "26/7/2026", due_date: "26/8/2026",  effort: "8" },
-  { name: "Clean kitchen",         category: "household", reoccuring: "TRUE",  reoccuring_rate: "2 weeks",  last_done: "",          due_date: "1/8/2026",   effort: "4" },
-];
-
-if (!localStorage.getItem(TODOS_KEY)) saveTodos(SEED_TODOS);
-
 // ── Date helpers ──────────────────────────────────────────────────────────────
 function todayDate() { const d = new Date(); d.setHours(0, 0, 0, 0); return d; }
 
@@ -686,6 +658,66 @@ function fromInputDate(s) {
   return `${parseInt(d)}/${parseInt(m)}/${y}`;
 }
 
+// ── CSV import ────────────────────────────────────────────────────────────────
+function parseCSVRow(line) {
+  const values = [];
+  let inQuote = false, val = "";
+  for (const ch of line) {
+    if (ch === '"')                  { inQuote = !inQuote; }
+    else if (ch === "," && !inQuote) { values.push(val.trim()); val = ""; }
+    else                             { val += ch; }
+  }
+  values.push(val.trim());
+  return values;
+}
+
+function parseCSV(text) {
+  const lines = text
+    .replace(/^﻿/, "")   // strip UTF-8 BOM
+    .replace(/\r\n/g, "\n")   // normalise Windows line endings
+    .replace(/\r/g, "\n")
+    .split("\n")
+    .filter(l => l.trim());
+  if (lines.length < 2) return [];
+  const headers = parseCSVRow(lines[0]).map(h => h.toLowerCase().trim());
+  return lines.slice(1).map(line => {
+    const vals = parseCSVRow(line);
+    const obj  = {};
+    headers.forEach((h, i) => { obj[h] = vals[i] || ""; });
+    return obj;
+  });
+}
+
+function handleImportFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const rows = parseCSV(e.target.result);
+    const imported = rows
+      .map(r => ({
+        name:            (r.name            || "").trim(),
+        category:        (r.category        || "").trim(),
+        reoccuring:      (r.reoccuring      || "").trim().toUpperCase() === "TRUE" ? "TRUE" : "FALSE",
+        reoccuring_rate: (r.reoccuring_rate || "").trim(),
+        last_done:       (r.last_done       || "").trim(),
+        due_date:        (r.due_date        || "").trim(),
+        effort:          String(parseInt(r.effort) || 1),
+      }))
+      .filter(r => r.name);
+
+    if (!imported.length) { alert("No valid todos found in the file."); return; }
+
+    const existing = loadTodos();
+    const msg = existing.length
+      ? `Replace ${existing.length} existing todo${existing.length !== 1 ? "s" : ""} with ${imported.length} imported?`
+      : `Import ${imported.length} todo${imported.length !== 1 ? "s" : ""}?`;
+    if (!confirm(msg)) return;
+
+    saveTodos(imported);
+    loadTodosScreen();
+  };
+  reader.readAsText(file);
+}
+
 // ── Todos screen ──────────────────────────────────────────────────────────────
 function loadTodosScreen() {
   const list  = document.getElementById("todos-list");
@@ -738,6 +770,13 @@ document.getElementById("todos-back").addEventListener("click", () => {
 });
 
 document.getElementById("todos-add-btn").addEventListener("click", () => openTodoModal());
+
+const todosImportInput = document.getElementById("todos-import-input");
+document.getElementById("todos-import-btn").addEventListener("click", () => todosImportInput.click());
+todosImportInput.addEventListener("change", e => {
+  const file = e.target.files[0];
+  if (file) { handleImportFile(file); e.target.value = ""; }
+});
 
 function deleteTodo(name) {
   if (!confirm(`Delete "${name}"?`)) return;
