@@ -560,6 +560,7 @@ input[type="range"] {
 }
 .form-input:focus { border-color: var(--accent); }
 .form-input:disabled { opacity: 0.35; pointer-events: none; }
+select.form-input { cursor: pointer; color-scheme: dark; }
 
 .form-row--inline {
   display: flex;

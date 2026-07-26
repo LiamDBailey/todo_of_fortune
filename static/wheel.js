@@ -245,9 +245,8 @@ function drawWeightGraph(weightEffect) {
 let audioCtx = null;
 
 function ensureAudio() {
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  }
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === "suspended") audioCtx.resume();
 }
 
 function playTick(volume = 0.35) {
@@ -759,10 +758,6 @@ async function saveTodo() {
     return;
   }
   const effort = parseInt(document.getElementById("todo-effort").value, 10);
-  if (!effort || effort < 1 || effort > 10) {
-    showTodoError("Effort must be between 1 and 10.");
-    return;
-  }
 
   const payload = {
     name,
